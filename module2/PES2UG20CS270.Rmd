@@ -1,0 +1,110 @@
+---
+title: "UE20CS312 - Data Analytics - Worksheet 2b : Multiple Linear Regression"
+subtitle: "PES University"
+author: "Reshmi Pradeep, Dept. of CSE - PES2UG20CS270"
+date: "2022-09-18"
+output: pdf_document
+urlcolor: blue
+editor_options: 
+markdown: 
+wrap: 72
+---
+
+
+```{r mod2asgn3}
+library(tidyverse)
+library(InformationValue)
+
+data<-read.csv('got_characters.csv')
+
+###Problem 1
+nrow(data) #no. of characters
+
+data[data==""] <- NA
+
+naPercent<-(colMeans(is.na(data)))*100
+coln<-colnames(data)
+percentDf<-data.frame(coln,order(-naPercent))
+
+View(percentDf)
+View(data)
+
+###Problem 2
+#since columns with too many missing values are not useful, they are dropped, here by 80%
+percentDf<-subset(percentDf,naPercent<80)
+
+df<-subset(data, select=-c(mother, father, heir, spouse, isAliveMother, isAliveFather, isAliveHeir, isAliveSpouse))
+summary(is.na(df))
+
+ggplot(df, aes(x=age)) + geom_histogram()
+ggplot(df, aes(x=dateOfBirth)) + geom_histogram()
+ggplot(df, aes(x=popularity)) + geom_histogram()
+
+#to fix discrepancy in age
+agemedian<- median(df$age, na.rm=TRUE)
+df$age[is.na(df$age)]<- agemedian
+df$dateOfBirth[is.na(df$dateOfBirth)]<- -1
+
+#converting categorical variables to numerical
+df$house[is.na(df$house)]<- -1
+df$title[is.na(df$title)]<- -1
+df$culture[is.na(df$culture)]<- -1
+
+x<-as.factor(df$house)
+df$house<-unclass(x)
+
+x<-as.factor(df$title)
+df$title<-unclass(x)
+
+x<-as.factor(df$culture)
+df$culture<-unclass(x)
+
+
+###Problem 3
+
+table(df$actual)
+#it's not the same
+
+ones<-df[which(df$actual== 1),]
+zeros<-df[which(df$actual== 0),]
+
+set.seed(123)  
+ones_trsample<- sample(1:nrow(ones), 0.7*nrow(zeros)) 
+zeros_trsample <- sample(1:nrow(zeros), 0.7*nrow(zeros))  
+
+#training
+trainOnes<-ones[ones_trsample,]  
+trainZeros<-zeros[zeros_trsample,]
+trainDf<-rbind(trainOnes,trainZeros)
+num1<-nrow(trainDf)
+trainDf<-trainDf[sample(1:num1),]
+
+#testing
+testOnes<- ones[-ones_trsample,]
+testZeros<-zeros[-zeros_trsample,]
+testDf<-rbind(testOnes,testZeros)
+num2<-nrow(testDf)
+testDf<-testDf[sample(1:num2),]
+
+#check
+table(trainDf$actual)
+table(testDf$actual)
+
+
+### Problem 4
+lrm<-glm(actual ~ age + culture + male + book1 + isMarried + boolDeadRelations + isPopular + popularity, data=trainDf, family = binomial(link="logit"))
+summary(lrm)
+predicted<-plogis(predict(lrm, testDf))
+
+cutoff<-optimalCutoff(testDf$actual, predicted)[1] 
+cutoff
+
+### Problem 5
+misClassError(testDf$actual, predicted, threshold=cutoff)
+confusionMatrix(testDf$actual, predicted, threshold=cutoff)
+sensitivity(testDf$actual, predicted, threshold=cutoff)
+specificity(testDf$actual, predicted, threshold=cutoff)
+
+plotROC(testDf$actual, predicted)
+#area under the curve is 0.6731
+```
