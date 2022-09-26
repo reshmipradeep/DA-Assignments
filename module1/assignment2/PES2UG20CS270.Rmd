@@ -1,0 +1,65 @@
+---
+title: "UE20CS312 - Data Analyrics - Worksheet 1a - Part 1 - Exploring data with R"
+subtitle: "PES University"
+author: "Reshmi Pradeep, Dept. of CSE - PES2UG20CS270"
+date: "2022-08-24"
+output: pdf_document
+urlcolor: blue
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r asgn2}
+### Solutions
+
+### Problem 1
+df <- read.csv("top_1000_instagrammers.csv", header=TRUE)
+
+library(tidyverse)
+
+df$Followers <- substr(df$Followers, 1, nchar(df$Followers) - 1)
+df$Authentic.Engagement <- substr(df$Authentic.Engagement, 1, nchar(df$Authentic.Engagement) - 1)
+df$Engagement.Avg. <- substr(df$Engagement.Avg., 1, nchar(df$Engagement.Avg.) - 1)
+
+df$Followers <- as.numeric(as.character(df$Followers))
+df$Authentic.Engagement <- as.numeric(as.character(df$Authentic.Engagement))
+df$Engagement.Avg. <- as.numeric(as.character(df$Engagement.Avg.))
+
+print(summary(df))
+
+##ANALYSIS: from the summary we can tell that the average engagement 
+#and authentic engagement have almost similar statistics as expected. 
+#There's a mean of 26M followers with maximum being approx. 530M
+#My instagram has 871 followers and has authentic engagement of about 450
+#which are both very small when compared with the top 1000's statistics.
+
+### Problem 2
+library(ggplot2)
+
+total <- aggregate(df$Followers, by=df[c('Audience.Country')], FUN=sum)
+
+ggplot(total, aes(x=Audience.Country,y=x))+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1))
+
+ind_follower <- total[which(total$Audience.Country == "India"),'x']
+sprintf("Total number of followers for India -is %s", ind_follower)
+
+#ANALYSIS: United states has the most amount of followers as you can see from the plotted histogram.
+#India has a total of 5684M followers and is ranked second.
+
+
+### Problem3
+library(tidyverse)
+boxplot(df$Authentic.Engagement, main="Authentic Engagement", horizontal=TRUE)
+
+#ANALYSIS: from the box plot, we can tell that minimum engagment is 1, 
+#median of about 250M, maximum of 1000M and 1st quartile at 125M while the third quartile is at 450M. 
+#It also has some potential outliers after 950M.
+
+### Conclusion
+#My instagram comes under lifestyle category
+# It has 871 followers and an estimated engagement of 450
+#On comparing it to the top 1000 instagram accounts, mine's insignificant. 
+#If I were to become an influencer, the best way to increase followers and engaments would be 
+#to switch to  amore popular category and focus on the US and indian audience
+```
