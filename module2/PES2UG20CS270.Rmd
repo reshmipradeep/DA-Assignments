@@ -1,0 +1,87 @@
+---
+title: "UE20CS312 - Data Analytics - Worksheet 2b : Multiple Linear Regression"
+subtitle: "PES University"
+author: "Reshmi Pradeep, Dept. of CSE - PES2UG20CS270"
+date: "2022-09-16"
+output: pdf_document
+urlcolor: blue
+editor_options: 
+markdown: 
+wrap: 72
+---
+
+```{r mod2asgn2}
+###PROBLEM 1
+library(tidyverse)
+df<-read_csv('spotify.csv')
+head(df)
+
+colSums(is.na(df))
+df<-as.data.frame(scale(df)) #normalizing
+summary(df)
+#AIC is decreasing with each attribute.Even with far fewer variables, the R2 has decreased by an insignificant amount.
+
+
+###PROBLEM 2
+model<-lm(energy~., data=df)
+summary(model)
+#The adjustment in the “Adjusted R Square” value in the summary output is a correction for the number of x variables included in the prediction model.In our example,the adjusted R2 = 0.8338, meaning that 83.38% of the variance in the measure of energy can be predicted by using all other attributes.
+
+###PROBLEM 3
+library(corrplot)
+correl<-cor(df)
+corrplot(correl,method='number',addCoef.col = 1, number.cex=0.6, tl.cex=0.6,col=colorRampPalette(c("red", "purple", "blue"))(20))
+
+
+#scatter plots
+plot(x=df$instrumentalness,y=df$energy, main="instrumentalness vs energy")
+plot(x=df$acousticness,y=df$energy, main="acousticness vs energy")
+
+reduced<-lm(energy~loudness+acousticness, data=df) #reducing
+summary(reduced)
+# p-value of the F-statistic is < 2.2e-16, which is highly significant, heaviest the predictor variables is significantly related to the outcome variable. The adjusted R2 = 0.7555
+
+###PROBLEM 4
+anova(reduced,model)
+#H0: All coefficients removed from the full model are zero.
+#A: At least one of the coefficients removed from the full model is non-zero.
+
+###PROBLEM 5
+library(olsrr)
+stepwise<-lm(energy~.,data=df)
+summary(stepwise)
+ols_step_both_aic(stepwise)
+
+###PROBLEM 6
+#Full model residuals
+plot(model$residuals, pch=20)
+abline(h=0,lty=2)
+ols_plot_resid_hist(model)
+
+#Reduced mdel residuals
+plot(reduced$residuals, pch=20)
+abline(h=0,lty=2)
+ols_plot_resid_hist(reduced)
+
+#Stepwise model residuals
+plot(stepwise$residuals, pch=20)
+abline(h=0,lty=2)
+ols_plot_resid_hist(stepwise)
+#high density of points close to the origin and a low density of points away from the origin. Hence, this satisfies our assumptions that our multiple regression model residuals are independent and normally distributed
+
+###PROBLEM 7
+ols_vif_tol(model)
+cookdgraph<-ols_plot_cooksd_chart(model)
+
+cooksD<-cooks.distance(model)
+n<-nrow(df)
+influential<-cooksD[(cooksD>4/n)]
+head(influential)
+
+names_of_influential<-names(influential)
+outliers<-df[names_of_influential,]
+noOutliers<-df %>% anti_join(outliers)
+newmod<-lm(energy~., data=noOutliers)
+summary(newmod)
+#The fit improves once the outliers are removed
+```
