@@ -1,0 +1,143 @@
+---
+title: "Assignment3"
+author: "Reshmi"
+date: "2022-09-02"
+output: word_document
+---
+
+```{r problem1}
+#PROBLEM 1
+
+library(tidyverse)
+df <- read.csv('CharlesBookClubDataset.csv')
+summary(df)
+
+#to get number of missing values in each column
+colSums(is.na(df))
+```
+```{r problem2}
+#PROBLEM 2
+
+plotHistogram <- function() 
+{
+  Recency <- df$R
+  Frequency <- df$F
+  Monetary <- df$M
+  hist(Recency, breaks=20)
+  hist(Frequency, breaks=20)
+  hist(Monetary, breaks=20)
+}
+plotHistogram()
+
+#since the graphs show that they are positively skewed, missing values can be imputed with the mode
+
+findMode <- function(x) 
+{
+  mode <- names(which.max(table(x)))
+  if(is.numeric(x)) 
+    return(as.numeric(mode))
+  mode
+}
+df$R[is.na(df$R)] <- findMode(df$R)
+df$F[is.na(df$F)] <- findMode(df$F)
+df$M[is.na(df$M)] <- findMode(df$M)
+
+colSums(is.na(df)) #checking if NaN values are filled
+
+plotHistogram()
+```
+
+```{r problem3}
+#PROBLEM 3
+
+#4 bins are used for Recency, 5 bins for Monetary and 3 bins for Frequency as every bin is to have the same number of observations because it's based on the quantiles which is optimal for binning at the breakpoints
+
+df <- df %>% mutate(Rcode=cut(df$R,breaks=unique(quantile(df$R,probs=seq.int(0,1,by=1/4))),include.lowest=TRUE),
+                    
+Mcode=cut(df$M,breaks=unique(quantile(df$M,probs=seq.int(0,1,by=1/5))),include.lowest=TRUE),
+
+Fcode=cut(df$F,breaks=unique(quantile(df$F,probs=seq.int(0,1,by=1/4))),include.lowest=TRUE))
+
+#new columns
+levels(df$Mcode) <- c('$15-$112','$112-$181','$181-$242','$242-$296','$296-$479')
+levels(df$Rcode) <- c('2-8 months','8-14 months','14-16 months','16-36 months')
+levels(df$Fcode) <- c('1-2 books','2-6 books','6-12 books')
+summary(df[c('Mcode', 'Rcode', 'Fcode')])
+```
+
+```{r problem4}
+#PROBLEM 4
+
+# bar graphs
+ggplot(df, aes(x = Fcode)) +geom_bar() +coord_flip () +labs(x = "Frequency")
+ggplot(df, aes(x = Rcode)) +geom_bar() +coord_flip () +labs(x = "Recency")
+ggplot(df, aes(x = Mcode)) +geom_bar() +coord_flip () +labs(x = "Monetary")
+ggplot(df, aes(x = FirstPurch)) +geom_bar() +coord_flip () +labs(x = "First Purchase")
+
+df$Florence <- factor(df$Florence,labels = c("No", "Yes")) #categorical feature
+
+#box plots
+ggplot(df, aes_string(x="Florence", y="R", fill="Florence")) +geom_boxplot() +coord_flip() +labs(x="Recency", y="Was the purchase made?") +theme(legend.position=c(0.9, 0.9))
+
+ggplot(df, aes_string(x="Florence", y="M", fill="Florence"))+geom_boxplot() +coord_flip() +labs(x = "Monetary", y = "Was the pruchase made?") +theme(legend.position=c(0.9, 0.9))
+
+ggplot(df, aes_string(x="Florence", y="F", fill="Florence")) +geom_boxplot() +coord_flip() +labs(x="Frequency", y="Was the pruchase made?") +theme(legend.position=c(0.9, 0.9))
+
+#density plots
+ggplot(df, aes_string(x="R", fill="Florence")) +geom_density(alpha=0.4) +labs(x="Recency") +theme(legend.position=c(0.9, 0.9))
+
+ggplot(df, aes_string(x="M", fill="Florence")) +geom_density(alpha=0.4) +labs(x="Monetary") +theme(legend.position=c(0.9, 0.9))
+
+ggplot(df, aes_string(x="F", fill="Florence")) +geom_density(alpha=0.4) +labs(x="Frequency") +theme(legend.position=c(0.9, 0.9))
+```
+
+#PART 2 - ANOVA
+```{r p1}
+#PROBLEM 1
+
+library(ggpubr)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(broom)
+library(car)
+data <- read.csv('Scenario 1.csv')
+
+#1)Scully can use Fisher's test, i.e., One-way anova as there's only a single independent variable
+#2)Scully would have used the aov() fucntion
+
+oneway <- aov(No.of.items ~ POI, data)
+summary(oneway)
+
+#3)based on the hypothesis of one way anova, since p value > 0.05 there is no relation between the person of interest and the average number of evidence collected against them
+```
+
+```{r p2andp3}
+#PROBLEM 2
+data <- read.csv('Scenario 2.csv')
+#1)Scully can use two-way anova as there are two categorical variables on which it is dependent
+#2)Scully would have used the aov() fucntion
+twoway <- aov(No.of.items ~ POI * Priority, data)
+summary(twoway)
+
+#3)  Based on the hypotheses of two way ANOVA test, since p value < 0.05 there is maybe a relation between the person of interest and the avg number of evidence collected against them and between the Priority and the avg number of evidence collected against them. Since p value > 0.05 there is no interaction between the Priority and person of interest.
+
+#4) Scully should take note of the assumptions made: homogeneity of variance
+plot(twoway)
+# categorical variables cannot be compared with F statistic and they are normally-distributed dependent variable
+ 
+
+#PROBLEM 3
+tukey.twoway <- TukeyHSD(aov(formula = No.of.items ~ factor(POI) + Priority, data ))
+tukey.twoway
+
+par(mar=c(5,8,4,1)+.1)
+tukey.plot.test<-TukeyHSD(aov(formula = No.of.items ~ factor(POI), data))
+plot(tukey.plot.test, las = 1)
+
+par(mar=c(5,8,4,1)+.1)
+tukey.plot.test<-TukeyHSD(aov(formula = No.of.items ~ Priority, data))
+plot(tukey.plot.test, las = 1)
+
+#No pairs of POI have a statistically significant difference in mean no of evidence generated which implies that no difference in the average no of Evidence items discovered when compared with any two POI. Critical priority has a different mean which implies that assigning it to work on the cases generate different no of evidence items compared to the rest of the priorities.
+```
