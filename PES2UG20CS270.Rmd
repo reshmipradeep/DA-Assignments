@@ -1,0 +1,72 @@
+---
+title: "UE20CS312 - Data Analytics - Worksheet 2a - Simple Linear Regression"
+subtitle: "PES University"
+author: "Reshmi Pradeep, Dept. of CSE - PES2UG20CS270"
+date: "2022-09-10"
+output: pdf_document
+urlcolor: blue
+editor_options: 
+markdown: 
+wrap: 72
+---
+```{r 2a}
+###PROBLEM 1
+library(tidyverse)
+df<-read_csv('dragon_neurons.csv')
+head(df)
+
+ggplot(data=df,mapping=aes(x=axon_diameter,y=conduction_velocity))+ geom_point()+ stat_smooth()
+#graph shows linear relationship
+
+cor(df$axon_diameter,df$conduction_velocity)
+#correlation also indicates linear relationship
+
+model<-lm(conduction_velocity ~ axon_diameter,data =df) 
+print(model)
+
+#plotting best-fit
+ggplot(df,aes(axon_diameter,conduction_velocity))+geom_point()+stat_smooth(method=lm)
+
+###PROBLEM 2
+res<-resid(model)
+plot(fitted(model), res) 
+abline(0,0)
+
+#linear model is not appropriate for modeling this data as the points are not scattered randomly around the residual=0 in the plot.
+
+df$ad=log(df$axon_diameter) #new functional form
+newmodel<-lm(conduction_velocity ~ ad ,data=df) 
+newres<-resid(newmodel)
+plot(fitted(newmodel), newres) 
+abline(0,0)
+
+###Problem 3
+newdf=df[c("axon_diameter","conduction_velocity")] 
+newdf=na.omit(newdf) 
+newdf.center=colMeans(newdf) 
+newdf.cov=cov(newdf)
+
+el_radius=qchisq(p=0.95, df=ncol(newdf)) 
+el_radius=sqrt(el_radius)
+ellipse<-car::ellipse(center=newdf.center, shape=newdf.cov, radius=el_radius, segments=150, draw=FALSE)
+ellipse<-as.data.frame(ellipse)
+colnames(ellipse)<-colnames(newdf)
+
+fig<-ggplot(newdf, aes(x=axon_diameter, y=conduction_velocity)) +geom_point(size=2) +geom_polygon(data=ellipse, fill="blue", color="black", alpha =0.5) +geom_point(aes(newdf.center[1] , newdf.center[2]) ,size=5,color="white") +geom_text(aes(label=row.names(newdf)), hjust=1, vjust=-1.5, size=2.5) +ylab("conduction_velocity")+ xlab("axon_diameter")
+
+print(fig)
+# we can see from the ellipse plotted that there is one outlier - 5
+
+###Problem 4
+summary(model)
+summary(newmodel)
+
+#r-squared shows how well the regression model explains observed data. 
+#Since the r-squared value for the second model is close to 1, a large proportion of the variability has been explained by the regression model.
+#Hence, we can infer that the second model is better than the first model.
+
+###Problem 5
+#As the p-value is much less than 0.05, we reject the null hypothesis, 
+#there isn't a statistically significant linear relationship at a significance value of 0.05
+#and Axon diameter has a significant impact on conduction velocity.
+```
