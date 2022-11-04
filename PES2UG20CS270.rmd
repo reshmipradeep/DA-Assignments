@@ -1,0 +1,85 @@
+---
+title: "UE20CS312 - Data Analytics - Worksheet 3a - Basic Forecasting Techniques"
+subtitle: "PES University"
+author: "Reshmi Pradeep, Dept. of CSE - PES2UG20CS270"
+date: "2022-10-05"
+output: pdf_document
+urlcolor: blue
+editor_options: 
+markdown: 
+wrap: 72
+---
+
+```{r mod3asgn1}
+library(tidyverse)
+library(fpp2)
+
+df <- read.csv('sales.csv')
+head(df)
+
+sales <- df$Sales
+head(sales)
+
+sales_ts <- ts(sales, frequency = 52, start=c(2010, 2, 5))
+sales_ts
+
+###Problem 1
+
+decom <- decompose(sales_ts, 'additive')
+plot(as.ts(decom$trend))
+plot(as.ts(decom$seasonal))
+plot(as.ts(decom$random))
+
+plot(decom)
+
+###Problem 2
+#single
+single_s.train <- window(sales_ts, end=c(2020,40))
+single_s.test <- window(sales_ts, start =c(2011,2))
+
+single_ses <- ses(single_s.train,alpha =.2,h=100)
+autoplot(forecast((single_ses),col="black"))
+
+#Double
+double_s <- holt(single_s.train)
+plot(double_s,col="red")
+
+single_s.hw <- ets(single_s.train)
+plot(forecast(single_s.hw),col="blue")
+
+#Triple
+triple_s <- HoltWinters(sales_ts, alpha=0.2, beta=0.5, gamma=0.8, seasonal = "additive")
+plot(triple_s,col = "violet")
+
+
+###Problem 3
+model<- lm(sales ~ (Holiday_Flag + Unemployment + Laptop_Demand + Temperature + Fuel_Price + CPI),data = df)
+pred = predict(model)
+summary(model)
+
+plot(pred)
+plot(predict(pred),df$Sales,xlab="Predicted Values",ylab="Observed Values")
+abline(a = 0, b = 1, col = "blue", lwd = 2)
+
+###Problem 4
+laptop_demand <- ts(df$Laptop_Demand, frequency = 23, start=c(2010, 2, 5))
+head(laptop_demand)
+
+plot.ts((laptop_demand),col="red")
+
+Holt_laptop_demand <- HoltWinters(laptop_demand)
+plot(laptop_demand, ylab="laptop_sales", xlim=c(2010,2013),col="red")
+lines(Holt_laptop_demand$fitted[,1], col="blue")
+
+###Problem 5
+accuracy(single_ses)
+
+accuracy(double_s)
+accuracy(single_s.hw)
+
+accuracy(forecast(triple_s))
+
+accuracy(model)
+
+#Triple Exponential Smoothing is the best Exponential Smoothing method and regression is not better than Exponential Smoothing. Triple Exponential Smoothing is better as in the situation given above laptop sales has the seasonality aspect which triple exponential smoothing takes care.The equations for single and double smoothing, a third equation is used to handle the seasonality aspect. 
+```
